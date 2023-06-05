@@ -1,6 +1,3 @@
-#include <algorithm>
-#include <chrono>
-#include <concepts>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -22,31 +19,29 @@ static_assert(!std::derived_from<Concurrent<Bar>, std::atomic<Bar>>);
 
 int main()
 {
-    using namespace std::literals;
+    static constexpr auto size = 10;
 
-    auto str = Concurrent<std::string> { "hello" };
-    auto threads = std::vector<std::thread> {};
-    auto mutex = std::mutex {};
-    const auto size = std::max(4u, std::thread::hardware_concurrency());
+    Concurrent<std::string> concurrent_string;
+    std::vector<std::thread> threads;
 
     threads.reserve(size);
 
-    for (auto start = 0u, last = size - 1; start < last; ++start) {
-        threads.emplace_back([&str, &mutex, start] {
-            std::this_thread::sleep_for(100ns * start);
-            const auto read = str.load();
-
-            std::lock_guard lock { mutex };
-            std::cout << start << "\t: " << read << '\n';
+    for (auto start = 0, last = size; start < last; ++start) {
+        threads.emplace_back([&concurrent_string, start] {
+            concurrent_string.apply_exclusive([start](auto& str) {
+                str += "thread ";
+                str += static_cast<char>('0' + start);
+                str += '\n';
+            });
         });
     }
-
-    threads.emplace_back([&str] {
-        str.store("world");
-    });
 
     for (auto& thread : threads)
         thread.join();
 
-    return static_cast<int>(str.load() != "world");
+    concurrent_string.apply_shared([](const auto& str) {
+        std::cout << str << std::endl;
+    });
+
+    return 0;
 }
