@@ -2,6 +2,8 @@
 #define CONCURRENT_HPP_
 
 #include <atomic>
+#include <concepts>
+#include <functional>
 #include <shared_mutex>
 #include <type_traits>
 #include <utility>
@@ -74,6 +76,28 @@ public:
         std::lock_guard lock { mutex_ };
 
         return std::exchange(object_, std::move(desired));
+    }
+
+    template <std::invocable<const T&> Fn>
+    auto apply_shared(Fn&& func) const
+    {
+        using Result = std::invoke_result_t<Fn, const T&>;
+        static_assert(!std::is_reference_v<Result> && !std::is_pointer_v<Result>);
+
+        std::shared_lock lock { mutex_ };
+
+        return std::invoke(std::forward<Fn>(func), object_);
+    }
+
+    template <std::invocable<T&> Fn>
+    auto apply_exclusive(Fn&& func)
+    {
+        using Result = std::invoke_result_t<Fn, T&>;
+        static_assert(!std::is_reference_v<Result> && !std::is_pointer_v<Result>);
+
+        std::lock_guard lock { mutex_ };
+
+        return std::invoke(std::forward<Fn>(func), object_);
     }
 
 private:
