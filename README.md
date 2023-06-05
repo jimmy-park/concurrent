@@ -6,9 +6,11 @@ C++20 concurrent wrapper class
 
 ## Features
 
-- Provide the same interface as `std::atomic<T>` (load, store, exchange, ...)
 - Equal to `std::atomic<T>` when `T` could be a lock-free atomic object
 - Implement thread-safe operations using `std::shared_mutex` for non-atomic objects
+  - Provide the same interface as `std::atomic<T>` (load, store, exchange, ...)
+  - `apply_shared(Callable)` : Call `lock_shared()` before invoking the Callable object
+  - `apply_exclusive(Callable)` : Call `lock()` before invoking the Callable object
 
 ## Usage
 
@@ -17,8 +19,33 @@ C++20 concurrent wrapper class
 
 int main()
 {
-    Concurrent<int> i { 42 }; // This is actually an empty derived class of std::atomic<int>
-    Concurrent<std::string> str { "Read and write operations are thread-safe" };
+    // This is actually an empty derived class of std::atomic<int>
+    Concurrent<int> concurrent_int { 0 };
+    concurrent_int.fetch_add(42);
+
+    // Read and write operations are thread-safe
+    Concurrent<std::string> concurrent_string;
+    std::vector<std::thread> threads;
+
+    static constexpr auto size = 10;
+    threads.reserve(size);
+
+    for (auto start = 0, last = size; start < last; ++start) {
+        threads.emplace_back([&concurrent_string, start] {
+            concurrent_string.apply_exclusive([start](auto& str) {
+                str += "thread ";
+                str += static_cast<char>('0' + start);
+                str += '\n';
+            });
+        });
+    }
+
+    for (auto& thread : threads)
+        thread.join();
+
+    concurrent_string.apply_shared([](const auto& str) {
+        std::cout << str << std::endl;
+    });
 
     return 0;
 }
