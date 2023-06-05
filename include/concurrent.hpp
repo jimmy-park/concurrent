@@ -38,7 +38,7 @@ public:
     {
     }
 
-    [[nodiscard]] T operator=(T desired) noexcept
+    [[nodiscard]] T operator=(T desired)
     {
         store(desired);
 
@@ -50,26 +50,26 @@ public:
         return false;
     }
 
-    void store(T desired) noexcept
+    void store(T desired)
     {
         std::lock_guard lock { mutex_ };
 
         object_ = std::move(desired);
     }
 
-    [[nodiscard]] T load() const noexcept
+    [[nodiscard]] T load() const
     {
         std::shared_lock lock { mutex_ };
 
         return object_;
     }
 
-    [[nodiscard]] operator T() const noexcept
+    [[nodiscard]] operator T() const
     {
         return load();
     }
 
-    [[nodiscard]] T exchange(T desired) noexcept
+    [[nodiscard]] T exchange(T desired)
     {
         std::lock_guard lock { mutex_ };
 
