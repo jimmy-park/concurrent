@@ -40,6 +40,14 @@ public:
     {
     }
 
+    ~Concurrent() = default;
+    Concurrent(Concurrent&) = delete;
+    Concurrent(const Concurrent&) = delete;
+    Concurrent(Concurrent&&) = delete;
+    Concurrent& operator=(Concurrent&) = delete;
+    Concurrent& operator=(const Concurrent&) = delete;
+    Concurrent& operator=(Concurrent&&) = delete;
+
     [[nodiscard]] T operator=(T desired)
     {
         store(desired);
