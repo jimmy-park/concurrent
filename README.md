@@ -8,7 +8,8 @@ C++20 concurrent wrapper class
 
 - Equal to `std::atomic<T>` when `T` could be a lock-free atomic object
 - Implement thread-safe operations using `std::shared_mutex` for non-atomic objects
-  - Provide the same interface as `std::atomic<T>` (load, store, exchange, ...)
+  - Provide the same interface as `std::atomic` (load, store, exchange, ...)
+  - `release()` : Release the managed object
   - `apply_shared(Callable)` : Call `lock_shared()` before invoking the Callable object
   - `apply_exclusive(Callable)` : Call `lock()` before invoking the Callable object
 
