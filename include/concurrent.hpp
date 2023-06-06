@@ -86,6 +86,13 @@ public:
         return std::exchange(object_, std::move(desired));
     }
 
+    [[nodiscard]] T release()
+    {
+        std::lock_guard lock { mutex_ };
+
+        return std::move(object_);
+    }
+
     template <std::invocable<const T&> Fn>
     auto apply_shared(Fn&& func) const
     {
