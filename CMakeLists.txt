@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.23)
 
 project(
     concurrent
-    VERSION 0.2.0
+    VERSION 0.3.0
     DESCRIPTION "C++20 concurrent wrapper class"
     HOMEPAGE_URL "https://github.com/jimmy-park/concurrent"
     LANGUAGES CXX
