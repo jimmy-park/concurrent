@@ -36,11 +36,12 @@ public:
 
     template <typename... Args>
     Concurrent(Args&&... args)
+        noexcept(std::is_nothrow_default_constructible_v<std::shared_mutex> && std::is_nothrow_constructible_v<T, Args&&...>)
         : object_ { std::forward<Args>(args)... }
     {
     }
 
-    ~Concurrent() = default;
+    ~Concurrent() noexcept(std::destructible<std::shared_mutex> && std::destructible<T>) = default;
     Concurrent(Concurrent&) = delete;
     Concurrent(const Concurrent&) = delete;
     Concurrent(Concurrent&&) = delete;
@@ -49,6 +50,7 @@ public:
     Concurrent& operator=(Concurrent&&) = delete;
 
     [[nodiscard]] T operator=(T desired)
+        noexcept(noexcept(store(desired)) && std::is_nothrow_move_constructible_v<T>)
     {
         store(desired);
 
@@ -61,6 +63,7 @@ public:
     }
 
     void store(T desired)
+        noexcept(is_nothrow_lockable && std::is_nothrow_move_assignable_v<T>)
     {
         std::lock_guard lock { mutex_ };
 
@@ -68,18 +71,20 @@ public:
     }
 
     [[nodiscard]] T load() const
+        noexcept(is_nothrow_lockable && std::is_nothrow_copy_constructible_v<T>)
     {
         std::shared_lock lock { mutex_ };
 
         return object_;
     }
 
-    [[nodiscard]] operator T() const
+    [[nodiscard]] operator T() const noexcept(noexcept(load()))
     {
         return load();
     }
 
     [[nodiscard]] T exchange(T desired)
+        noexcept(is_nothrow_lockable && std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_assignable_v<T>)
     {
         std::lock_guard lock { mutex_ };
 
@@ -87,6 +92,7 @@ public:
     }
 
     [[nodiscard]] T release()
+        noexcept(is_nothrow_lockable && std::is_nothrow_move_constructible_v<T>)
     {
         std::lock_guard lock { mutex_ };
 
@@ -95,6 +101,7 @@ public:
 
     template <std::invocable<const T&> Fn>
     auto apply_shared(Fn&& func) const
+        noexcept(is_nothrow_lockable && std::is_nothrow_invocable_v<Fn, const T&>)
     {
         using Result = std::invoke_result_t<Fn, const T&>;
         static_assert(!std::is_reference_v<Result> && !std::is_pointer_v<Result>);
@@ -106,6 +113,7 @@ public:
 
     template <std::invocable<T&> Fn>
     auto apply_exclusive(Fn&& func)
+        noexcept(is_nothrow_lockable && std::is_nothrow_invocable_v<Fn, T&>)
     {
         using Result = std::invoke_result_t<Fn, T&>;
         static_assert(!std::is_reference_v<Result> && !std::is_pointer_v<Result>);
@@ -116,6 +124,13 @@ public:
     }
 
 private:
+    static constexpr bool is_nothrow_lockable = requires(std::shared_mutex mutex) {
+        { mutex.lock()          } noexcept;
+        { mutex.lock_shared()   } noexcept;
+        { mutex.unlock()        } noexcept;
+        { mutex.unlock_shared() } noexcept;
+    };
+
     mutable std::shared_mutex mutex_;
     T object_;
 };
