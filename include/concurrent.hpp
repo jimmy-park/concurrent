@@ -8,6 +8,8 @@
 #include <type_traits>
 #include <utility>
 
+namespace detail {
+
 template <typename T>
 concept LockFree
     = std::is_trivially_copyable_v<T>
@@ -20,16 +22,18 @@ concept LockFree
 template <typename T>
 concept NotLockFree = !LockFree<T>;
 
+} // namespace detail
+
 template <typename>
 class Concurrent;
 
-template <LockFree T>
+template <detail::LockFree T>
 class Concurrent<T> : public std::atomic<T> {
 public:
     using std::atomic<T>::atomic;
 };
 
-template <NotLockFree T>
+template <detail::NotLockFree T>
 class Concurrent<T> {
 public:
     static constexpr bool is_always_lock_free = false;
