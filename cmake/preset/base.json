@@ -6,7 +6,10 @@
             "hidden": true,
             "binaryDir": "${sourceDir}/build/${presetName}",
             "installDir": "${sourceDir}/install/${presetName}",
-            "cmakeExecutable": "cmake"
+            "cmakeExecutable": "cmake",
+            "cacheVariables": {
+                "CONCURRENT_INSTALL": true
+            }
         },
         {
             "name": "host-linux",
