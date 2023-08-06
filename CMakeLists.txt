@@ -8,14 +8,24 @@ project(
     LANGUAGES CXX
 )
 
-include(cmake/CompileOptions.cmake)
-
+# Custom options
+option(CONCURRENT_COMPILE "Build as a static/shared library" OFF)
 option(CONCURRENT_INSTALL "Install headers and CMake targets" OFF)
 
-add_library(concurrent INTERFACE)
+include(cmake/CompileOptions.cmake)
+
+if(CONCURRENT_COMPILE)
+    set(SCOPE PUBLIC)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/concurrent.cpp "#include <concurrent.hpp>")
+    add_library(concurrent ${CMAKE_CURRENT_BINARY_DIR}/concurrent.cpp)
+else()
+    set(SCOPE INTERFACE)
+    add_library(concurrent INTERFACE)
+endif()
+
 add_library(concurrent::concurrent ALIAS concurrent)
-target_compile_features(concurrent INTERFACE cxx_std_20)
-target_sources(concurrent INTERFACE
+target_compile_features(concurrent ${SCOPE} cxx_std_20)
+target_sources(concurrent ${SCOPE}
     FILE_SET HEADERS
     BASE_DIRS include
     FILES include/concurrent.hpp
